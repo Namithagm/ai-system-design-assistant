@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI System Design Assistant</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #22223a;
+    --border: rgba(120,100,255,0.15);
+    --border2: rgba(120,100,255,0.3);
+    --accent: #7c5cfc;
+    --accent2: #a855f7;
+    --accent3: #06b6d4;
+    --accent4: #10b981;
+    --text: #e8e6f0;
+    --text2: #a09ab8;
+    --text3: #6b6585;
+    --glow: rgba(124,92,252,0.4);
+    --font: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* === GRID BACKGROUND === */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,92,252,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,252,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* === HEADER === */
+  header {
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    padding: 0 2rem;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 64px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .logo-text span { color: var(--accent); }
+  .header-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent3);
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.2);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  /* === MAIN LAYOUT === */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* === LEFT PANEL === */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .hero-text h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 0.75rem;
+  }
+  .hero-text h1 .gradient-text {
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-text p {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+  }
+
+  .input-card label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+
+  .api-key-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0 12px;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s;
+  }
+  .api-key-row:focus-within { border-color: var(--accent); }
+  .api-key-row svg { flex-shrink: 0; opacity: 0.5; }
+  #apiKey {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 0;
+  }
+  #apiKey::placeholder { color: var(--text3); }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 0.75rem;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text3); }
+
+  .examples-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+  .example-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .example-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(124,92,252,0.08);
+  }
+
+  #generateBtn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: -0.2px;
+  }
+  #generateBtn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px var(--glow);
+  }
+  #generateBtn:active:not(:disabled) { transform: translateY(0); }
+  #generateBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* === SECTIONS LEGEND === */
+  .sections-legend {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+  }
+  .sections-legend h3 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 1rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* === RIGHT PANEL === */
+  .right-panel { min-height: 400px; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    text-align: center;
+    gap: 1rem;
+    color: var(--text3);
+  }
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    border: 2px dashed var(--border2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%, 100% { border-color: var(--border2); }
+    50% { border-color: var(--accent); }
+  }
+  .empty-state h2 { font-size: 16px; color: var(--text2); }
+  .empty-state p { font-size: 13px; max-width: 300px; line-height: 1.6; }
+
+  /* === LOADING === */
+  #loadingState {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 1.5rem;
+  }
+  .loader-ring {
+    width: 60px;
+    height: 60px;
+    border: 3px solid var(--surface3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text {
+    font-size: 14px;
+    color: var(--text2);
+    font-family: var(--mono);
+    text-align: center;
+  }
+  .loader-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 0.5rem;
+  }
+  .loader-step {
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.3s;
+  }
+  .loader-step.active { color: var(--accent); }
+  .loader-step.done { color: var(--accent4); }
+  .step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* === RESULT AREA === */
+  #resultArea { display: none; }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .result-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .result-title span { color: var(--accent); }
+  .result-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .action-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary-sm {
+    background: rgba(124,92,252,0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary-sm:hover { background: rgba(124,92,252,0.25); }
+
+  /* === SECTION CARDS === */
+  .section-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    animation: slideUp 0.4s ease both;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: var(--surface2); }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    flex: 1;
+  }
+  .section-chevron {
+    transition: transform 0.2s;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .section-card.collapsed .section-chevron { transform: rotate(-90deg); }
+  .section-card.collapsed .section-body { display: none; }
+
+  .section-body {
+    padding: 18px;
+    line-height: 1.7;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .section-body ul { padding-left: 1.2rem; }
+  .section-body li { margin-bottom: 4px; }
+  .section-body strong { color: var(--text); font-weight: 600; }
+  .section-body code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent3);
+  }
+  .section-body pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  .section-body pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .section-body h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 12px 0 6px;
+  }
+  .section-body p { margin-bottom: 8px; }
+
+  /* === MERMAID DIAGRAM === */
+  .diagram-container {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 12px 0;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .diagram-container svg { max-width: 100%; }
+
+  /* === TECH STACK CHIPS === */
+  .tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .tech-chip {
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-weight: 500;
+  }
+  .chip-fe { color: #06b6d4; border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.08); }
+  .chip-be { color: #a855f7; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08); }
+  .chip-db { color: #10b981; border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); }
+  .chip-infra { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+  .chip-other { color: #f43f5e; border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.08); }
+
+  /* === ERROR STATE === */
+  .error-card {
+    background: rgba(244,63,94,0.08);
+    border: 1px solid rgba(244,63,94,0.3);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: #fb7185;
+    font-size: 14px;
+  }
+  .error-card strong { display: block; margin-bottom: 4px; font-size: 15px; }
+
+  /* === SECTION COLORS === */
+  .s1 { background: rgba(124,92,252,0.12); color: #a78bfa; }
+  .s2 { background: rgba(6,182,212,0.12); color: #22d3ee; }
+  .s3 { background: rgba(168,85,247,0.12); color: #c084fc; }
+  .s4 { background: rgba(16,185,129,0.12); color: #34d399; }
+  .s5 { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .s6 { background: rgba(244,63,94,0.12); color: #fb7185; }
+  .s7 { background: rgba(14,165,233,0.12); color: #38bdf8; }
+  .s8 { background: rgba(52,211,153,0.12); color: #6ee7b7; }
+  .s9 { background: rgba(251,113,133,0.12); color: #fda4af; }
+  .s10 { background: rgba(167,139,250,0.12); color: #c4b5fd; }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 900px) {
+    main {
+      grid-template-columns: 1fr;
+      padding: 1.5rem;
+    }
+    .left-panel { position: static; }
+    .hero-text h1 { font-size: 1.6rem; }
+  }
+
+  /* === MERMAID THEME OVERRIDE === */
+  .mermaid svg { background: transparent !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">AI <span>System Design</span> Assistant</div>
+    </div>
+    <div class="header-badge">v1.0 · Groq API</div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT PANEL -->
+  <aside class="left-panel">
+    <div class="hero-text">
+      <h1>Design any<br><span class="gradient-text">system at scale</span></h1>
+      <p>Enter your system idea and get a complete architectural blueprint — requirements, components, data flow, tech stack, and more.</p>
+    </div>
+
+    <div class="input-card">
+      <label>🔑 Groq API Key</label>
+      <div class="api-key-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="apiKey" placeholder="gsk_..." autocomplete="off" />
+      </div>
+
+      <label>💡 System Idea</label>
+      <textarea id="ideaInput" placeholder="e.g. Build a real-time chat application for teams, Design a food delivery platform like Zomato, Create an AI-powered job portal..."></textarea>
+
+      <div class="examples-row">
+        <span style="font-size:11px;color:var(--text3);align-self:center;">Examples:</span>
+        <button class="example-chip" onclick="setExample('Build a real-time chat application')">💬 Chat App</button>
+        <button class="example-chip" onclick="setExample('Design a food delivery platform like Zomato')">🍕 Food Delivery</button>
+        <button class="example-chip" onclick="setExample('Create an AI-powered job portal')">💼 Job Portal</button>
+        <button class="example-chip" onclick="setExample('Design a video streaming platform like YouTube')">🎥 Video Streaming</button>
+        <button class="example-chip" onclick="setExample('Build an e-commerce platform with recommendations')">🛒 E-Commerce</button>
+        <button class="example-chip" onclick="setExample('Design a ride-sharing app like Uber')">🚗 Ride Sharing</button>
+      </div>
+
+      <button id="generateBtn" onclick="generateDesign()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate System Design
+      </button>
+    </div>
+
+    <div class="sections-legend">
+      <h3>Output Sections</h3>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Problem Statement</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div> Functional Requirements</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c084fc"></div> Non-Functional Requirements</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> High-Level Architecture</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> System Components</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div> Data Flow</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> Tech Stack</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6ee7b7"></div> Database Design</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fda4af"></div> Scaling Considerations</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c4b5fd"></div> Possible Improvements</div>
+    </div>
+  </aside>
+
+  <!-- RIGHT PANEL -->
+  <section class="right-panel">
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🏗️</div>
+      <h2>No design generated yet</h2>
+      <p>Enter your system idea on the left and click Generate to get a complete system design blueprint.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState">
+      <div class="loader-ring"></div>
+      <div class="loader-text">
+        Designing your system...<br>
+        <div class="loader-steps">
+          <div class="loader-step" id="ls1"><div class="step-dot"></div> Analyzing requirements</div>
+          <div class="loader-step" id="ls2"><div class="step-dot"></div> Designing architecture</div>
+          <div class="loader-step" id="ls3"><div class="step-dot"></div> Selecting tech stack</div>
+          <div class="loader-step" id="ls4"><div class="step-dot"></div> Generating diagrams</div>
+          <div class="loader-step" id="ls5"><div class="step-dot"></div> Finalizing blueprint</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Area -->
+    <div id="resultArea">
+      <div class="result-header">
+        <div class="result-title" id="resultTitle">System Design: <span id="systemName"></span></div>
+        <div class="result-actions">
+          <button class="action-btn btn-outline" onclick="copyAll()">📋 Copy</button>
+          <button class="action-btn btn-primary-sm" onclick="resetAll()">↺ New Design</button>
+        </div>
+      </div>
+      <div class="section-grid" id="sectionGrid"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ===================== CONFIG =====================
+const SECTION_COLORS = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'];
+const SECTION_ICONS = ['🎯','✅','⚡','🏗️','🧩','🔄','🛠️','🗄️','📈','💡'];
+const SECTION_LABELS = [
+  'Problem Statement',
+  'Functional Requirements',
+  'Non-Functional Requirements',
+  'High-Level Architecture',
+  'System Components',
+  'Data Flow',
+  'Tech Stack Suggestions',
+  'Database Design',
+  'Scaling Considerations',
+  'Possible Improvements'
+];
+
+// ===================== MERMAID INIT =====================
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  securityLevel: 'loose',
+  themeVariables: {
+    background: '#12121a',
+    primaryColor: '#7c5cfc',
+    primaryTextColor: '#e8e6f0',
+    primaryBorderColor: '#3d3060',
+    lineColor: '#6b6585',
+    secondaryColor: '#1a1a26',
+    tertiaryColor: '#22223a',
+    edgeLabelBackground: '#1a1a26',
+    fontSize: '14px'
+  }
+});
+
+// ===================== HELPERS =====================
+function sanitizeMermaid(code) {
+  code = code.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  // Remove all control characters except newline/tab
+  code = code.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // Strip backticks
+  code = code.replace(/`/g, '');
+  // Fix {{...}} -> [...] (not valid in mermaid 10)
+  code = code.replace(/\{\{([^}]+)\}\}/g, '[$1]');
+  // Fix {(...)} -> [...]
+  code = code.replace(/\{([^}]+)\}/g, (m, inner) => {
+    // Keep for erDiagram block syntax
+    if (code.trimStart().toLowerCase().startsWith('erdiagram')) return m;
+    return `[${inner}]`;
+  });
+  // Remove any quotes wrapping entire node label brackets: ["Label"] -> [Label]
+  code = code.replace(/\["([^"]+)"\]/g, (m, inner) => {
+    // Only strip quotes if label has no special mermaid-breaking chars
+    return /[<>{}|]/.test(inner) ? m : `[${inner}]`;
+  });
+  // Strip parentheses inside node labels: [Label (detail)] -> [Label detail]
+  code = code.replace(/\[([^\]]*)\]/g, (m, inner) => {
+    const clean = inner.replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+    return `[${clean}]`;
+  });
+  // For sequenceDiagram: strip participant labels with special chars
+  if (code.toLowerCase().includes('sequencediagram')) {
+    code = code.replace(/participant\s+(\S+)\s+as\s+"([^"]+)"/gi, (m, id, label) => {
+      const clean = label.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+      return `participant ${id} as ${clean}`;
+    });
+  }
+  // For erDiagram: fix relationship lines
+  if (code.trimStart().toLowerCase().startsWith('erdiagram')) {
+    // erDiagram is more forgiving, just strip bad chars from labels
+    code = code.replace(/"([^"]+)"/g, (m, inner) => `"${inner.replace(/[^a-zA-Z0-9 _-]/g, '')}"`);
+    return code;
+  }
+  // Ensure valid diagram type on first line
+  const firstLine = code.split('\n')[0].trim().toLowerCase();
+  const validTypes = ['graph ', 'graph\t', 'flowchart ', 'sequencediagram', 'erdiagram', 'classdiagram', 'statediagram', 'gantt', 'pie'];
+  const hasType = validTypes.some(t => firstLine.startsWith(t));
+  if (!hasType) {
+    code = 'graph TD\n' + code;
+  }
+  // Final pass: remove lines with characters mermaid 10 chokes on
+  const lines = code.split('\n');
+  const safe = lines.map(line => {
+    // Skip comment lines and diagram type lines
+    if (line.trim().startsWith('%%') || line.trim().startsWith('graph') || 
+        line.trim().startsWith('flowchart') || line.trim().startsWith('sequenceDiagram') ||
+        line.trim().startsWith('erDiagram') || line.trim().startsWith('-->') ||
+        line.trim().startsWith('->') || line.trim().startsWith('note') ||
+        line.trim().startsWith('participant') || line.trim().startsWith('activate') ||
+        line.trim().startsWith('deactivate') || line.trim() === '') {
+      return line;
+    }
+    // Remove stray unicode / emoji from node definition lines
+    return line.replace(/[^\x20-\x7E\n]/g, '');
+  });
+  return safe.join('\n');
+}
+
+// Render mermaid with multiple retries and graceful fallback
+async function renderMermaidSafe(el, rawCode) {
+  const strategies = [
+    // Strategy 1: sanitized code
+    () => sanitizeMermaid(rawCode),
+    // Strategy 2: force simple graph TD from scratch
+    () => {
+      const lines = rawCode.split('\n').filter(l => l.trim() && !l.trim().startsWith('%%'));
+      const type = lines[0].trim().toLowerCase();
+      if (type.startsWith('sequencediagram')) {
+        // Rebuild minimal sequence diagram
+        const actors = new Set();
+        const arrows = [];
+        lines.slice(1).forEach(l => {
+          const m = l.match(/(\w+)\s*[-–—]+>+\s*(\w+)\s*:\s*(.+)/);
+          if (m) { actors.add(m[1]); actors.add(m[2]); arrows.push(`  ${m[1]}->>${m[2]}: ${m[3].replace(/[^a-zA-Z0-9 _]/g, '').slice(0,40)}`); }
+        });
+        if (arrows.length) return `sequenceDiagram\n${[...actors].map(a => `  participant ${a}`).join('\n')}\n${arrows.join('\n')}`;
+      }
+      if (type.startsWith('erdiagram')) {
+        // Rebuild minimal ER
+        const entities = [];
+        lines.slice(1).forEach(l => {
+          const m = l.match(/(\w+)\s+[|o}{]+[-–]+[|o}{]+\s+(\w+)\s*:\s*"?([^"]+)"?/);
+          if (m) entities.push(`  ${m[1]} ||--o{ ${m[2]} : "${m[3].replace(/[^a-zA-Z0-9 ]/g,'').slice(0,30)}"`);
+        });
+        if (entities.length) return `erDiagram\n${entities.join('\n')}`;
+      }
+      // Default: ultra-simple flowchart from node lines
+      const nodes = [];
+      lines.slice(1).forEach(l => {
+        const m = l.match(/(\w+)(?:\[([^\]]+)\])?\s*--?>+\s*(\w+)(?:\[([^\]]+)\])?/);
+        if (m) nodes.push(`  ${m[1]}[${(m[2]||m[1]).replace(/[^a-zA-Z0-9 ]/g,'').slice(0,25)}] --> ${m[3]}[${(m[4]||m[3]).replace(/[^a-zA-Z0-9 ]/g,'').slice(0,25)}]`);
+      });
+      return nodes.length ? `graph TD\n${nodes.join('\n')}` : null;
+    },
+  ];
+
+  for (const getCode of strategies) {
+    try {
+      const code = getCode();
+      if (!code) continue;
+      const uid = `md${Date.now()}${Math.floor(Math.random()*99999)}`;
+      const { svg } = await mermaid.render(uid, code);
+      el.innerHTML = svg;
+      return; // success
+    } catch(e) { /* try next */ }
+  }
+
+  // All strategies failed — render a nice text fallback
+  const lines = rawCode.split('\n').filter(l => l.trim() && !l.trim().startsWith('%%'));
+  const type = lines[0]?.trim() || 'Diagram';
+  el.innerHTML = `
+    <div style="text-align:left;padding:4px 0">
+      <div style="font-size:11px;color:var(--accent3);margin-bottom:8px;font-family:var(--mono)">📊 ${type}</div>
+      <pre style="color:var(--text2);font-size:11px;font-family:var(--mono);line-height:1.6;white-space:pre-wrap;margin:0">${lines.slice(1).join('\n').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+    </div>
+  `;
+}
+
+function setExample(text) {
+  document.getElementById('ideaInput').value = text;
+  document.getElementById('ideaInput').focus();
+}
+
+function setState(state) {
+  document.getElementById('emptyState').style.display = state === 'empty' ? 'flex' : 'none';
+  document.getElementById('loadingState').style.display = state === 'loading' ? 'flex' : 'none';
+  document.getElementById('resultArea').style.display = state === 'result' ? 'block' : 'none';
+}
+
+function resetAll() {
+  setState('empty');
+  document.getElementById('sectionGrid').innerHTML = '';
+  document.getElementById('ideaInput').value = '';
+}
+
+function copyAll() {
+  const cards = document.querySelectorAll('.section-body');
+  let text = `AI System Design: ${document.getElementById('systemName').textContent}\n\n`;
+  SECTION_LABELS.forEach((label, i) => {
+    if (cards[i]) {
+      text += `## ${label}\n${cards[i].innerText}\n\n`;
+    }
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  });
+}
+
+function toggleSection(card) {
+  card.classList.toggle('collapsed');
+}
+
+// ===================== LOADING ANIMATION =====================
+let loaderInterval = null;
+function startLoadingAnimation() {
+  const steps = ['ls1','ls2','ls3','ls4','ls5'];
+  let current = 0;
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active', 'done');
+  });
+  document.getElementById('ls1').classList.add('active');
+
+  loaderInterval = setInterval(() => {
+    if (current > 0) {
+      document.getElementById(steps[current-1]).classList.remove('active');
+      document.getElementById(steps[current-1]).classList.add('done');
+    }
+    if (current < steps.length) {
+      document.getElementById(steps[current]).classList.add('active');
+      current++;
+    } else {
+      clearInterval(loaderInterval);
+    }
+  }, 1800);
+}
+function stopLoadingAnimation() {
+  if (loaderInterval) clearInterval(loaderInterval);
+}
+
+// ===================== PROMPT BUILDER =====================
+function buildPrompt(idea) {
+  return `You are a senior software architect and system design expert. Design a complete system for the following idea:
+
+SYSTEM IDEA: "${idea}"
+
+Provide a detailed, structured system design with EXACTLY these 10 sections. Format your response as valid JSON with this exact structure:
+
+{
+  "systemName": "Short name for the system",
+  "sections": [
+    {
+      "title": "Problem Statement",
+      "content": "detailed markdown content here"
+    },
+    {
+      "title": "Functional Requirements",
+      "content": "detailed markdown content here with bullet points"
+    },
+    {
+      "title": "Non-Functional Requirements",
+      "content": "cover scalability, performance, reliability, security, maintainability"
+    },
+    {
+      "title": "High-Level Architecture",
+      "content": "describe the architecture clearly. Include a mermaid diagram code block using: \`\`\`mermaid\\ngraph TD\\n  ...\`\`\`"
+    },
+    {
+      "title": "System Components",
+      "content": "list frontend, backend, database, APIs, message queues, caches etc with brief descriptions"
+    },
+    {
+      "title": "Data Flow",
+      "content": "step-by-step data flow with numbered steps. Include a mermaid sequence diagram: \`\`\`mermaid\\nsequenceDiagram\\n  ...\`\`\`"
+    },
+    {
+      "title": "Tech Stack Suggestions",
+      "content": "recommend specific technologies for each layer: Frontend: ..., Backend: ..., Database: ..., Infrastructure: ..., Additional: ..."
+    },
+    {
+      "title": "Database Design",
+      "content": "key entities/tables with fields. Include a mermaid ER diagram: \`\`\`mermaid\\nerDiagram\\n  ...\`\`\`"
+    },
+    {
+      "title": "Scaling Considerations",
+      "content": "horizontal scaling, caching strategy, load balancing, CDN, sharding, microservices etc"
+    },
+    {
+      "title": "Possible Improvements",
+      "content": "future enhancements, advanced features, ML/AI integrations, performance optimizations"
+    }
+  ]
+}
+
+IMPORTANT RULES:
+1. Return ONLY valid JSON, no other text before or after
+2. Make content rich, specific, and actionable (not generic)
+3. Tailor everything specifically to the given system idea
+4. For mermaid diagrams, use ONLY these exact safe patterns:
+   - Architecture: graph TD\n  A[Label] --> B[Label]\n  (only alphanumeric node IDs, only [square bracket] labels, NO parentheses, NO quotes, NO special chars inside labels)
+   - Data Flow: sequenceDiagram\n  participant A\n  A->>B: action\n  (short single-word participant IDs, simple text after colon)
+   - Database: erDiagram\n  ENTITY1 ||--o{ ENTITY2 : "has"\n  (UPPERCASE entity names, simple relationship labels)
+   - NEVER use: {{shapes}}, (round), >asymmetric<, {rhombus}, pipes |, or any special chars in labels
+   - NEVER put quotes around node labels in graph TD diagrams
+   - Keep all labels under 30 characters, no commas inside labels
+5. Use markdown inside content strings (bold with **, lists with -, code with backticks)
+6. Each section should have 150-400 words of content
+7. Tech stack section: prefix each tech category clearly like "**Frontend:** React, Next.js" etc`;
+}
+
+// ===================== RENDER SECTIONS =====================
+async function renderSections(data) {
+  const grid = document.getElementById('sectionGrid');
+  grid.innerHTML = '';
+
+  document.getElementById('systemName').textContent = data.systemName;
+
+  for (let i = 0; i < data.sections.length; i++) {
+    const sec = data.sections[i];
+    const color = SECTION_COLORS[i] || 's1';
+    const icon = SECTION_ICONS[i] || '📌';
+    // Guard against missing content
+    if (!sec || !sec.content) continue;
+
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.style.animationDelay = `${i * 60}ms`;
+
+    // Convert markdown-ish content to HTML
+    let html = await convertContent(sec.content, i);
+
+    card.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this.closest('.section-card'))">
+        <span class="section-num ${color}">${icon} ${String(i+1).padStart(2,'0')}</span>
+        <span class="section-title">${SECTION_LABELS[i]}</span>
+        <span class="section-chevron">▾</span>
+      </div>
+      <div class="section-body">${html}</div>
+    `;
+
+    grid.appendChild(card);
+
+    // Render mermaid diagrams in this card
+    const diagrams = card.querySelectorAll('.mermaid-diagram');
+    for (const d of diagrams) {
+      const raw = decodeURIComponent(d.dataset.code);
+      await renderMermaidSafe(d, raw);
+    }
+  }
+
+  // Render tech chips for tech stack section
+  renderTechChips();
+}
+
+async function convertContent(content, sectionIndex) {
+  // Extract mermaid blocks first
+  const mermaidBlocks = [];
+  content = content.replace(/```mermaid\n([\s\S]*?)```/g, (match, code) => {
+    const id = `MERMAID_${mermaidBlocks.length}`;
+    mermaidBlocks.push(code.trim());
+    return id;
+  });
+
+  // Convert markdown
+  let html = content
+    // Code blocks
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Headers
+    .replace(/^#{1,4}\s+(.+)$/gm, '<h4>$1</h4>')
+    // Numbered lists
+    .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    // Bullet lists
+    .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+    // Wrap consecutive li items
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    // Paragraphs
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/^(?!<[a-z])(.+)$/gm, (m) => {
+      if (!m.startsWith('<') && !m.startsWith('MERMAID')) return `<p>${m}</p>`;
+      return m;
+    });
+
+  // Re-insert mermaid blocks
+  mermaidBlocks.forEach((code, i) => {
+    html = html.replace(`MERMAID_${i}`, `
+      <div class="diagram-container">
+        <div class="mermaid-diagram" data-code="${encodeURIComponent(code)}"></div>
+      </div>
+    `);
+  });
+
+  return `<div>${html}</div>`;
+}
+
+// Fix mermaid data-code encoding
+function renderMermaidDiagrams(card) {
+  const diagrams = card.querySelectorAll('.mermaid-diagram');
+  diagrams.forEach(async (d) => {
+    try {
+      const code = decodeURIComponent(d.dataset.code);
+      const { svg } = await mermaid.render(`m${Date.now()}`, code);
+      d.innerHTML = svg;
+    } catch(e) {
+      d.innerHTML = `<code style="color:var(--text3);font-size:11px">Diagram: ${e.message}</code>`;
+    }
+  });
+}
+
+function renderTechChips() {
+  // Find tech stack section (index 6)
+  const bodies = document.querySelectorAll('.section-body');
+  if (bodies[6]) {
+    const body = bodies[6];
+    const text = body.innerHTML;
+
+    // Add color-coded chips based on keywords
+    const chipData = [
+      { keywords: ['react','vue','angular','next','nuxt','svelte','html','css','tailwind'], cls: 'chip-fe' },
+      { keywords: ['node','express','fastapi','django','spring','rails','laravel','go','rust','python'], cls: 'chip-be' },
+      { keywords: ['postgresql','mysql','mongodb','redis','cassandra','dynamodb','sqlite','elasticsearch'], cls: 'chip-db' },
+      { keywords: ['aws','gcp','azure','docker','kubernetes','nginx','cloudflare','kafka','rabbitmq'], cls: 'chip-infra' },
+    ];
+    // Parse content for tech names
+    const allTechs = new Set();
+    chipData.forEach(({ keywords }) => keywords.forEach(k => {
+      if (text.toLowerCase().includes(k)) allTechs.add(k);
+    }));
+
+    if (allTechs.size > 0) {
+      const chipContainer = document.createElement('div');
+      chipContainer.className = 'tech-chips';
+      allTechs.forEach(tech => {
+        let cls = 'chip-other';
+        chipData.forEach(({ keywords, cls: c }) => {
+          if (keywords.includes(tech)) cls = c;
+        });
+        const chip = document.createElement('span');
+        chip.className = `tech-chip ${cls}`;
+        chip.textContent = tech;
+        chipContainer.appendChild(chip);
+      });
+      body.appendChild(chipContainer);
+    }
+  }
+}
+
+// ===================== MAIN GENERATE FUNCTION =====================
+async function generateDesign() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const idea = document.getElementById('ideaInput').value.trim();
+
+  if (!apiKey) {
+    alert('Please enter your Groq API key.\n\nGet one free at: https://console.groq.com');
+    return;
+  }
+  if (!idea) {
+    alert('Please enter a system idea to design.');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite"></div> Generating...';
+
+  setState('loading');
+  startLoadingAnimation();
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 6000,
+        response_format: { type: 'json_object' },
+        messages: [{ role: 'user', content: buildPrompt(idea) }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Groq raw response:', JSON.stringify(data));
+
+    // Guard: check choices exist
+    if (!data.choices || !data.choices[0]) {
+      throw new Error('No choices in API response. Full response: ' + JSON.stringify(data).slice(0, 300));
+    }
+
+    const choice = data.choices[0];
+    const finishReason = choice.finish_reason;
+
+    // Guard: check message and content exist
+    if (!choice.message) {
+      throw new Error('No message in API response choice. finish_reason: ' + finishReason);
+    }
+
+    const rawText = choice.message.content;
+
+    if (!rawText) {
+      // Could be a tool_call or refusal — give a clear message
+      throw new Error(
+        finishReason === 'length'
+          ? 'Response was cut off (token limit). Try a shorter/simpler system idea.'
+          : `Empty response from Groq (finish_reason: ${finishReason}). Please try again.`
+      );
+    }
+
+    console.log('Raw text (first 300):', rawText.slice(0, 300));
+
+    // Parse JSON response
+    let parsed;
+    function cleanJson(str) {
+      str = str.replace(/^```json\n?/, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
+      str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      return str;
+    }
+    try {
+      parsed = JSON.parse(rawText);
+    } catch(e1) {
+      try {
+        parsed = JSON.parse(cleanJson(rawText));
+      } catch(e2) {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        if (match) {
+          try { parsed = JSON.parse(cleanJson(match[0])); }
+          catch(e3) { throw new Error('JSON parse failed. First 300 chars of response: ' + rawText.slice(0,300)); }
+        } else {
+          throw new Error('No JSON found in response. Response starts with: ' + rawText.slice(0,300));
+        }
+      }
+    }
+
+    // Guard: validate parsed structure
+    if (!parsed || !parsed.sections || !Array.isArray(parsed.sections)) {
+      throw new Error('Invalid response structure. Expected {systemName, sections:[...]}. Got: ' + JSON.stringify(parsed).slice(0,200));
+    }
+
+    stopLoadingAnimation();
+    setState('result');
+    await renderSections(parsed);
+
+    // Re-run mermaid on all diagrams
+    document.querySelectorAll('.mermaid-diagram').forEach(async (d) => {
+      const raw = decodeURIComponent(d.dataset.code);
+      await renderMermaidSafe(d, raw);
+    });
+
+  } catch(err) {
+    stopLoadingAnimation();
+    setState('result');
+    document.getElementById('systemName').textContent = 'Error';
+    document.getElementById('sectionGrid').innerHTML = `
+      <div class="error-card">
+        <strong>⚠ Generation Failed</strong>
+        ${err.message}<br><br>
+        <small style="opacity:0.7">Check your API key, ensure you have credits, and try again. If the error persists, the AI response format may have changed.</small>
+      </div>
+    `;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate System Design';
+  }
+}
+
+// ===================== KEYBOARD SHORTCUT =====================
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    generateDesign();
+  }
+});
+</script>
+
+</body>
+</html>
